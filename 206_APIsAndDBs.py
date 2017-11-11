@@ -18,7 +18,7 @@ import twitter_info # same deal as always...
 import json
 import sqlite3
 
-## Your name:
+## Your name: Sarah Jomaa
 ## The names of anyone you worked with on this project:
 
 #####
@@ -50,18 +50,34 @@ api = tweepy.API(auth, parser=tweepy.parsers.JSONParser())
 CACHE_FNAME = "206_APIsAndDBs_cache.json"
 # Put the rest of your caching setup here:
 
+try:
+    cache_file = open(CACHE_FNAME,'r')
+    cache_contents = cache_file.read()
+    cache_file.close()
+    CACHE_DICTION = json.loads(cache_contents)
+except:
+    CACHE_DICTION = {}
 
 
 # Define your function get_user_tweets here:
-
-
-
+def get_tweets(user):
+    if user in CACHE_DICTION:
+        print('using chached data')
+        twitter_results = CACHE_DICTION[user]
+    else:
+        print ('getting data from internet')
+        twitter_results = api.user_timeline(user)
+        CACHE_DICTION[user] = twitter_results
+        f = open(CACHE_FNAME, 'w')
+        f.write(json.dumps(CACHE_DICTION))
+        f.close()
+    return twitter_results
 
 
 # Write an invocation to the function for the "umich" user timeline and 
 # save the result in a variable called umich_tweets:
 
-
+umich_tweets = get_tweets("umich")
 
 
 ## Task 2 - Creating database and loading data into database
