@@ -20,6 +20,7 @@ import sqlite3
 
 ## Your name: Sarah Jomaa
 ## The names of anyone you worked with on this project:
+# Rachel Richardson
 
 #####
 
@@ -62,7 +63,7 @@ except:
 # Define your function get_user_tweets here:
 def get_user_tweets(user):
     if user in CACHE_DICTION:
-        print('using chached data')
+        print('using cached data')
         twitter_results = CACHE_DICTION[user]
     else:
         print ('getting data from internet')
@@ -78,11 +79,6 @@ def get_user_tweets(user):
 # save the result in a variable called umich_tweets:
 
 umich_tweets = get_user_tweets("umich")
-for d in umich_tweets:
-	for x in d['entities']['user_mentions']:
-		mentioned_user = (x['screen_name'])
-		print (mentioned_user)
-#print(get_user_tweets('hockey'))
 
 ## Task 2 - Creating database and loading data into database
 ## You should load into the Users table:
@@ -97,7 +93,7 @@ cur = conn.cursor()
 
 # Tweets Table
 cur.execute("DROP TABLE IF EXISTS Tweets")
-cur.execute("CREATE TABLE Tweets (tweet_id TEXT PRIMARY KEY NOT NULL, text TEXT NOT NULL, user_posted TEXT NOT NULL, time_posted TIMESTAMP NOT NULL, retweets NUMBER NOT NULL)")
+cur.execute("CREATE TABLE Tweets (tweet_id TEXT PRIMARY KEY NOT NULL, text TEXT NOT NULL, user_posted TEXT NOT NULL, time_posted DATETIME NOT NULL, retweets NUMBER NOT NULL)")
 
 for tw in umich_tweets:
     tup = tw['id'], tw['text'], tw['user']['id'], tw['created_at'], tw['retweet_count'] 
@@ -109,15 +105,27 @@ conn.commit()
 cur.execute("DROP TABLE IF EXISTS Users")
 cur.execute("CREATE TABLE Users (user_id TEXT PRIMARY KEY NOT NULL, screen_name TEXT NOT NULL, num_favs NUMBER NOT NULL, description TEXT NOT NULL)")
 
+for d in umich_tweets:
+	for x in d['entities']['user_mentions']:
+		user_id = api.get_user(x['screen_name'])
+		mentioned_user = (x['screen_name'])
+		num_favs = user_id['favourites_count']
+		user_description = user_id['description']
+		user_id = x['id']
+		print (mentioned_user)
+		for tw in umich_tweets:
+			tup2 = user_id, mentioned_user, num_favs, user_description
+			try:
+				cur.execute('INSERT INTO Users (user_id, screen_name, num_favs, description) VALUES (?, ?, ?, ?)', tup2)
+			except:
+				continue
+
 for tw in umich_tweets:
-	tup2 = tw['user']['id'], tw['user']['screen_name'], tw['user']['favourites_count'], tw['user']['description']
-	print(tup2)
-	try:
-		cur.execute('INSERT INTO Users (user_id, screen_name, num_favs, description) VALUES (?, ?, ?, ?)', tup2)
-	except:
-		continue
-
-
+ 	tup2 = tw['user']['id'], tw['user']['screen_name'], tw['user']['favourites_count'], tw['user']['description']
+ 	try:
+ 		cur.execute('INSERT INTO Users (user_id, screen_name, num_favs, description) VALUES (?, ?, ?, ?)', tup2)
+ 	except:
+ 		continue
 
 conn.commit()
 
