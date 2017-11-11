@@ -60,7 +60,7 @@ except:
 
 
 # Define your function get_user_tweets here:
-def get_tweets(user):
+def get_user_tweets(user):
     if user in CACHE_DICTION:
         print('using chached data')
         twitter_results = CACHE_DICTION[user]
@@ -77,8 +77,12 @@ def get_tweets(user):
 # Write an invocation to the function for the "umich" user timeline and 
 # save the result in a variable called umich_tweets:
 
-umich_tweets = get_tweets("umich")
-
+umich_tweets = get_user_tweets("umich")
+for d in umich_tweets:
+	for x in d['entities']['user_mentions']:
+		mentioned_user = (x['screen_name'])
+		print (mentioned_user)
+#print(get_user_tweets('hockey'))
 
 ## Task 2 - Creating database and loading data into database
 ## You should load into the Users table:
@@ -88,6 +92,34 @@ umich_tweets = get_tweets("umich")
 # mentioned in the umich timeline, that Twitter user's info should be 
 # in the Users table, etc.
 
+conn = sqlite3.connect('206_APIsAndDBs.sqlite')
+cur = conn.cursor()
+
+# Tweets Table
+cur.execute("DROP TABLE IF EXISTS Tweets")
+cur.execute("CREATE TABLE Tweets (tweet_id TEXT PRIMARY KEY NOT NULL, text TEXT NOT NULL, user_posted TEXT NOT NULL, time_posted TIMESTAMP NOT NULL, retweets NUMBER NOT NULL)")
+
+for tw in umich_tweets:
+    tup = tw['id'], tw['text'], tw['user']['id'], tw['created_at'], tw['retweet_count'] 
+    cur.execute('INSERT INTO Tweets (tweet_id, text, user_posted, time_posted, retweets) VALUES (?, ?, ?, ?, ?)', tup)
+
+conn.commit()
+
+# Users Table
+cur.execute("DROP TABLE IF EXISTS Users")
+cur.execute("CREATE TABLE Users (user_id TEXT PRIMARY KEY NOT NULL, screen_name TEXT NOT NULL, num_favs NUMBER NOT NULL, description TEXT NOT NULL)")
+
+for tw in umich_tweets:
+	tup2 = tw['user']['id'], tw['user']['screen_name'], tw['user']['favourites_count'], tw['user']['description']
+	print(tup2)
+	try:
+		cur.execute('INSERT INTO Users (user_id, screen_name, num_favs, description) VALUES (?, ?, ?, ?)', tup2)
+	except:
+		continue
+
+
+
+conn.commit()
 
 
 ## You should load into the Tweets table: 
