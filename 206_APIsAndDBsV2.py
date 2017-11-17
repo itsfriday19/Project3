@@ -91,19 +91,19 @@ umich_tweets = get_user_tweets("umich")
 conn = sqlite3.connect('206_APIsAndDBs.sqlite')
 cur = conn.cursor()
 
-# Tweets Table
+
 cur.execute("DROP TABLE IF EXISTS Tweets")
 cur.execute("CREATE TABLE Tweets (tweet_id TEXT PRIMARY KEY NOT NULL, text TEXT NOT NULL, user_posted TEXT NOT NULL, time_posted DATETIME NOT NULL, retweets NUMBER NOT NULL)")
 
 for tw in umich_tweets:
     tup = tw['id'], tw['text'], tw['user']['id'], tw['created_at'], tw['retweet_count'] 
-    cur.execute('INSERT INTO Tweets (tweet_id, text, user_posted, time_posted, retweets) VALUES (?, ?, ?, ?, ?)', tup) #keep in mind user_posted is a Foreign Key
+    cur.execute('INSERT INTO Tweets (tweet_id, text, user_posted, time_posted, retweets) VALUES (?, ?, ?, ?, ?)', tup) 
 
 conn.commit()
 
-# Users Table
+
 cur.execute("DROP TABLE IF EXISTS Users")
-cur.execute("CREATE TABLE Users (user_id TEXT PRIMARY KEY NOT NULL, screen_name TEXT NOT NULL, num_favs NUMBER NOT NULL, description TEXT NOT NULL)")
+cur.execute("CREATE TABLE Users (user_id TEXT PRIMARY KEY NOT NULL, screen_name TEXT NOT NULL, num_favs NUMBER NOT NULL, description TEXT NOT NULL)") 
 
 for d in umich_tweets:
 	for x in d['entities']['user_mentions']:
@@ -114,17 +114,15 @@ for d in umich_tweets:
 		user_id = x['id']
 		for tw in umich_tweets:
 			tup2 = user_id, mentioned_user, num_favs, user_description
-			try:
+			cur.execute('SELECT user_id FROM Users WHERE user_id = {}'.format(tup2[0]))
+			if len(cur.fetchall()) == 0:
 				cur.execute('INSERT INTO Users (user_id, screen_name, num_favs, description) VALUES (?, ?, ?, ?)', tup2)
-			except:
-				continue
 
 for tw in umich_tweets:
  	tup2 = tw['user']['id'], tw['user']['screen_name'], tw['user']['favourites_count'], tw['user']['description']
- 	try:
+ 	cur.execute('SELECT user_id FROM Users WHERE user_id = {}'.format(tup2[0]))
+ 	if len(cur.fetchall()) == 0:
  		cur.execute('INSERT INTO Users (user_id, screen_name, num_favs, description) VALUES (?, ?, ?, ?)', tup2)
- 	except:
- 		continue
 
 conn.commit()
 
@@ -200,7 +198,6 @@ for x in f:
 # elements in each tuple: the user screenname and the text of the 
 # tweet. Save the resulting list of tuples in a variable called joined_data.
 
-# problem: populating 20 times based on number of tweets
 joined_data = []
 
 cur.execute("SELECT screen_name, text from Users INNER JOIN Tweets WHERE Users.user_id == Tweets.user_posted")
@@ -213,10 +210,9 @@ for x in jd:
 # tweet in descending order based on retweets. Save the resulting 
 # list of tuples in a variable called joined_data2.
 
-# problem: populating 13 times based on number of users
 joined_data2 = []
 
-cur.execute("SELECT screen_name, text from Users INNER JOIN Tweets ORDER BY retweets DESC")
+cur.execute("SELECT screen_name, text from Users INNER JOIN Tweets WHERE Users.user_id == Tweets.user_posted ORDER BY retweets DESC")
 jd2 = cur.fetchall()
 for x in jd2:
 	joined_data2.append(x)
@@ -224,6 +220,8 @@ for x in jd2:
 ### IMPORTANT: MAKE SURE TO CLOSE YOUR DATABASE CONNECTION AT THE END 
 ### OF THE FILE HERE SO YOU DO NOT LOCK YOUR DATABASE (it's fixable, 
 ### but it's a pain). ###
+
+cur.close()
 
 ###### TESTS APPEAR BELOW THIS LINE ######
 ###### Note that the tests are necessary to pass, but not sufficient -- 
