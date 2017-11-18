@@ -105,9 +105,10 @@ conn.commit()
 cur.execute("DROP TABLE IF EXISTS Users")
 cur.execute("CREATE TABLE Users (user_id TEXT PRIMARY KEY NOT NULL, screen_name TEXT NOT NULL, num_favs NUMBER NOT NULL, description TEXT NOT NULL)") 
 
+# Inserting mentioned users
 for d in umich_tweets:
-	for x in d['entities']['user_mentions']:
-		user_id = api.get_user(x['screen_name'])
+	for x in d['entities']['user_mentions']: # lines 110 through 114 are assigning nested data in d['entities']['user_mentions'] to variables
+		user_id = api.get_user(x['screen_name']) # (note: user_id here is not the same as the user_id that we create in the table)
 		mentioned_user = (x['screen_name'])
 		num_favs = user_id['favourites_count']
 		user_description = user_id['description']
@@ -115,13 +116,14 @@ for d in umich_tweets:
 		for tw in umich_tweets:
 			tup2 = user_id, mentioned_user, num_favs, user_description
 			cur.execute('SELECT user_id FROM Users WHERE user_id = {}'.format(tup2[0]))
-			if len(cur.fetchall()) == 0:
+			if len(cur.fetchall()) == 0: # If the user_id is not already in cur.fetchall, insert user_id, screen_name, num_favs, and description
 				cur.execute('INSERT INTO Users (user_id, screen_name, num_favs, description) VALUES (?, ?, ?, ?)', tup2)
 
+# Inserting original user
 for tw in umich_tweets:
  	tup2 = tw['user']['id'], tw['user']['screen_name'], tw['user']['favourites_count'], tw['user']['description']
  	cur.execute('SELECT user_id FROM Users WHERE user_id = {}'.format(tup2[0]))
- 	if len(cur.fetchall()) == 0:
+ 	if len(cur.fetchall()) == 0: # If the user_id is not already in cur.fetchall, insert user_id, screen_name, num_favs, and description
  		cur.execute('INSERT INTO Users (user_id, screen_name, num_favs, description) VALUES (?, ?, ?, ?)', tup2)
 
 conn.commit()
@@ -153,7 +155,7 @@ conn.commit()
 # Save the list of tuples in a variable called users_info.
 
 users_info = []
-
+# Grabbing everything from Users table and apepnding it to users_info
 cur.execute("SELECT * from Users")
 u = cur.fetchall()
 for x in u:
@@ -199,7 +201,8 @@ for x in f:
 # tweet. Save the resulting list of tuples in a variable called joined_data.
 
 joined_data = []
-
+# Getting columns screen_name, text from Users table and Tweets table respectively. 
+# Checks to see if user_id in Users table is same as user_posted in Tweets table, then adds a tuple with that (screen_name, text) into the joined_data list
 cur.execute("SELECT screen_name, text from Users INNER JOIN Tweets WHERE Users.user_id == Tweets.user_posted")
 jd = cur.fetchall()
 for x in jd:
@@ -211,7 +214,7 @@ for x in jd:
 # list of tuples in a variable called joined_data2.
 
 joined_data2 = []
-
+# Grabbing screen_name, text columns and sorting them by retweets in the Tweets table in descending order
 cur.execute("SELECT screen_name, text from Users INNER JOIN Tweets WHERE Users.user_id == Tweets.user_posted ORDER BY retweets DESC")
 jd2 = cur.fetchall()
 for x in jd2:
